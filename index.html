@@ -174,7 +174,8 @@
             targetHomeShots: 30, targetAwayShots: 30,
             homeFOW: 0, awayFOW: 0, faceoffsTotalGoal: 50,
             homePIM: 0, awayPIM: 0, homePPO: 0, awayPPO: 0, homePPG: 0, awayPPG: 0,
-            currentLineHome: { f: 0, d: 0 }, currentLineAway: { f: 0, d: 0 }
+            currentLineHome: { f: 0, d: 0 }, currentLineAway: { f: 0, d: 0 },
+            homeForm: 1.0, awayForm: 1.0
           });
 
           // Shootout states
@@ -373,6 +374,8 @@
 
             const targetHomeShots = getTargetShots();
             const targetAwayShots = getTargetShots();
+            
+            const rollForm = () => Math.random() < 0.05 ? 0.6 : (0.9 + Math.random() * 0.2); // 5% de chance de s'effondrer complètement (blowout)
 
             setUiState({
               homeScore: 0, awayScore: 0, period: 1, isOT: false, isShootout: false,
@@ -382,7 +385,8 @@
               homePIM: awayPPO * 2, awayPIM: homePPO * 2, 
               homePPO: homePPO, awayPPO: awayPPO,
               homePPG: 0, awayPPG: 0,
-              currentLineHome: { f: 0, d: 0 }, currentLineAway: { f: 0, d: 0 }
+              currentLineHome: { f: 0, d: 0 }, currentLineAway: { f: 0, d: 0 },
+              homeForm: rollForm(), awayForm: rollForm()
             });
 
             setPlayers(prev => prev.map(p => {
@@ -484,40 +488,44 @@
                 const goalieSkill = (goalie.attrs.ref + goalie.attrs.posit + goalie.attrs.mit) / 3 || 80;
 
                 // --- NOUVELLE LOGIQUE DE DISTRIBUTION DES SCORES ---
-                // Le nombre de tirs ciblés total influence l'ouverture du jeu (Game Openness).
-                // Un match avec beaucoup de tirs sous-entend des défensives poreuses et des chances de haute qualité.
-                // Un match avec peu de tirs sous-entend un match hermétique (trap).
                 const totalTargetShots = uiState.targetHomeShots + uiState.targetAwayShots;
-                const opennessMultiplier = totalTargetShots / 54.5; // 54.5 est la moyenne de tirs combinés du simulateur
+                const opennessMultiplier = totalTargetShots / 54.5;
                 
-                // Probabilité de base rehaussée à ~11.8% (moyenne LNH moderne) ajustée par le rythme du match
-                const baseGoalProb = 0.118 * opennessMultiplier;
+                // Probabilité de base légèrement ajustée
+                const baseGoalProb = 0.115 * opennessMultiplier;
                 
-                // Impact du talent légèrement augmenté pour récompenser l'élite et étirer la distribution
-                const skillGap = (shooterSkill - goalieSkill) * 0.004;
+                // Analyse dynamique des forces en présence sur la glace
+                const iceOffense = shooterIce.reduce((sum, p) => sum + p.attrs.off + p.attrs.cre, 0) / (shooterIce.length * 2);
+                const iceDefense = (attackingTeam === 'home' ? awayIce : homeIce).reduce((sum, p) => sum + p.attrs.def, 0) / 5;
                 
-                // --- AJOUT : SIMULATION DU "LOSER POINT" LNH (Objectif: ~23% de prolongations) ---
-                // Reproduit la réalité de la LNH : les équipes jouent hermétiquement en 3e période si c'est l'égalité (pour le point garanti),
-                // et l'équipe en retard d'un but pousse pour créer l'égalité.
+                // L'écart de talent combine la force collective sur la glace et le duel individuel Tireur vs Gardien
+                const dynamicSkillGap = ((iceOffense - iceDefense) * 0.003) + ((shooterSkill - goalieSkill) * 0.005);
+                
+                // La forme du jour générée en début de match agit comme multiplicateur majeur
+                const formMultiplier = attackingTeam === 'home' ? (uiState.homeForm / uiState.awayForm) : (uiState.awayForm / uiState.homeForm);
+
                 let tieMakerMultiplier = 1.0;
                 if (uiState.period === 3) {
                   const scoreDiff = uiState.homeScore - uiState.awayScore;
                   if (scoreDiff === 0) {
-                    // Égalité : On réduit drastiquement les probabilités de marquer pour conserver l'égalité (Trappe défensive)
-                    tieMakerMultiplier = 0.55; 
-                  } else if (Math.abs(scoreDiff) === 1) {
-                    // Écart de 1 but : Poussée offensive de l'équipe en retard (Filet désert/Désespoir)
+                    tieMakerMultiplier = 0.60; // Trappe défensive 
+                  } else if (Math.abs(scoreDiff) === 1 || Math.abs(scoreDiff) === 2) {
                     const isTrailing = (attackingTeam === 'home' && scoreDiff < 0) || (attackingTeam === 'away' && scoreDiff > 0);
                     if (isTrailing) {
-                      tieMakerMultiplier = 1.65; // Boost majeur pour forcer la prolongation
+                      tieMakerMultiplier = 1.40; // Poussée du désespoir
+                    } else if (timeRemaining < 90 && Math.abs(scoreDiff) <= 2) {
+                      tieMakerMultiplier = 4.0; // Simulation d'un tir dans un FILET DÉSERT (génère des 3-1, 4-2, 5-3 naturellement)
                     } else {
-                      tieMakerMultiplier = 0.85; // L'équipe en avance se replie légèrement
+                      tieMakerMultiplier = 0.85; 
                     }
+                  } else if (Math.abs(scoreDiff) >= 3) {
+                    // Blowout (Dégelée) : L'équipe gagnante a des boulevards (la défense adverse abandonne), l'équipe perdante n'y arrive pas.
+                    const isTrailing = (attackingTeam === 'home' && scoreDiff < 0) || (attackingTeam === 'away' && scoreDiff > 0);
+                    tieMakerMultiplier = isTrailing ? 0.8 : 1.3; 
                   }
                 }
                 
-                // On s'assure qu'un tir a toujours un minimum de chance (1.5%) même si le gardien est parfait
-                const finalProb = Math.max(0.015, (baseGoalProb + skillGap) * tieMakerMultiplier);
+                const finalProb = Math.max(0.01, (baseGoalProb * formMultiplier + dynamicSkillGap) * tieMakerMultiplier);
                 const isGoal = Math.random() < finalProb;
                 // --- FIN NOUVELLE LOGIQUE ---
 
@@ -648,16 +656,8 @@
                     isShootout: false
                   }));
                   
-                  // Attribution stricte et obligatoire du but gagnant au compteur en fusillade.
-                  const winningScorerId = homeWon ? nextState.homeLastScorerId : nextState.awayLastScorerId;
-                  if (winningScorerId) {
-                    setPlayers(currentPlayers => currentPlayers.map(p => {
-                      if (p.id === winningScorerId) {
-                        return { ...p, stats: { ...p.stats, b: p.stats.b + 1, pts: p.stats.pts + 1 } };
-                      }
-                      return p;
-                    }));
-                  }
+                  // Note: Dans la LNH, aucun but ni point n'est accordé aux joueurs lors des tirs de barrage.
+                  // Seul le pointage d'équipe est affecté pour déterminer le vainqueur.
 
                   setTimeout(() => finalizeGameStats(homeWon), 150);
                   nextState.active = false;
@@ -750,7 +750,13 @@
                 const isStarter = alignments[p.tid].goalies.starter === p.id;
                 if (!isStarter) return p;
 
-                const bc = p.tid === 'home' ? uiState.awayScore : uiState.homeScore;
+                let bc = p.tid === 'home' ? uiState.awayScore : uiState.homeScore;
+                
+                // Retirer le but des tirs de barrage (fusillade) des statistiques du gardien perdant
+                if (isOTorSO && soHomeWon !== null) {
+                  bc = Math.min(uiState.homeScore, uiState.awayScore);
+                }
+
                 const tc = p.tid === 'home' ? uiState.awayShots : uiState.homeShots;
                 const arrets = Math.max(0, tc - bc);
                 const win = (p.tid === 'home' && homeWon) || (p.tid === 'away' && !homeWon);
@@ -820,7 +826,8 @@
               targetHomeShots: 30, targetAwayShots: 30,
               homeFOW: 0, awayFOW: 0, faceoffsTotalGoal: 50,
               homePIM: 0, awayPIM: 0, homePPO: 0, awayPPO: 0, homePPG: 0, awayPPG: 0,
-              currentLineHome: { f: 0, d: 0 }, currentLineAway: { f: 0, d: 0 }
+              currentLineHome: { f: 0, d: 0 }, currentLineAway: { f: 0, d: 0 },
+              homeForm: 1.0, awayForm: 1.0
             });
             setShootoutState({ round: 1, currentShooterTeam: 'away', homeGoals: 0, awayGoals: 0, homeAttempts: 0, awayAttempts: 0, active: false, homeLastScorerId: null, awayLastScorerId: null });
             setGameStarted(false);
