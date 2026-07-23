@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EA SPORTS PRO SIMULATOR - Hockey</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM CDNs -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel Standalone CDN to compile React JSX directly in-browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #020617;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-300 antialiased font-sans">
+    
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Custom SVG components to replace Lucide-React dependency locally
+        const Shield = ({ className }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+        );
+
+        const ClipboardPaste = ({ className }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                <path d="M9 12h6"/><path d="M9 16h6"/>
+            </svg>
+        );
+
+        const Users = ({ className }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+        );
+
+        const Activity = ({ className }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+        );
+
+        const Trophy = ({ className }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+                <path d="M4 22h16"/>
+                <path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34"/>
+                <path d="M12 2a7.7 7.7 0 0 1 7.54 8H4.46A7.7 7.7 0 0 1 12 2z"/>
+            </svg>
+        );
+
+        const Play = ({ className }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+        );
+
+        const Pause = ({ className }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="6" y="4" width="4" height="16"/>
+                <rect x="14" y="4" width="4" height="16"/>
+            </svg>
+        );
+
+        const RotateCcw = ({ className }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="1 4 1 10 7 10"/>
+                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+            </svg>
+        );
+
+        const Clock = ({ className }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+            </svg>
+        );
+
+        const Sliders = ({ className }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/>
+                <line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/>
+                <line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/>
+                <line x1="2" y1="14" x2="6" y2="14"/><line x1="10" y1="8" x2="14" y2="8"/>
+                <line x1="18" y1="16" x2="22" y2="16"/>
+            </svg>
+        );
+
+        const ChevronRight = ({ className }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"/>
+            </svg>
+        );
+
+        const Copy = ({ className }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+        );
+
+        const Check = ({ className }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+            </svg>
+        );
+
+        // Strict sorting order for positions in the LNH rosters
+        const POS_ORDER = [
+          'C', 'C/AD', 'C/AG', 'AD/C', 'AG/C', 'AD', 'AG', 'DD', 'DG', 'D', 'G'
+        ];
+
+        const COUNTRIES = ['Canada', 'États-Unis', 'Suède', 'Finlande', 'Russie', 'Allemagne', 'Suisse', 'Tchéquie'];
+
+        function App() {
+          const [activeTab, setActiveTab] = useState('prep'); // 'prep', 'alignment', 'live', 'stats'
+          const [gameStarted, setGameStarted] = useState(false);
+          const [teamNames, setTeamNames] = useState({ home: '', away: '' });
+          const [teamColors, setTeamColors] = useState({ home: '#ea0a2a', away: '#00205b' });
+
+          // Inputs initialized as strictly blank
+          const [importSkaters, setImportSkaters] = useState({ home: '', away: '' });
+          const [importGoalies, setImportGoalies] = useState({ home: '', away: '' });
+          const [importStatus, setImportStatus] = useState({ home: '', away: '' });
+
+          // Loaded database of players
+          const [players, setPlayers] = useState([]);
+          
+          // Clean empty configurations for lineups
+          const [alignments, setAlignments] = useState({
+            home: { forwards: Array(12).fill(null), defense: Array(6).fill(null), goalies: { starter: null, backup: null } },
+            away: { forwards: Array(12).fill(null), defense: Array(6).fill(null), goalies: { starter: null, backup: null } }
+          });
+          const [alignmentTeam, setAlignmentTeam] = useState('home');
+
+          // Timing and simulation systems variables
+          const [simSpeed, setSimSpeed] = useState(150); 
+          const [timeRemaining, setTimeRemaining] = useState(1200); 
+          const [isRunning, setIsRunning] = useState(false);
+          const [showIntermission, setShowIntermission] = useState(false);
+          const [eventsLog, setEventsLog] = useState([]);
+
+          // Metrics trackers
+          const [uiState, setUiState] = useState({
+            homeScore: 0, awayScore: 0, period: 1, isOT: false, isShootout: false,
+            homeShots: 0, awayShots: 0, homeHits: 0, awayHits: 0, homeBlocks: 0, awayBlocks: 0,
+            targetHomeShots: 30, targetAwayShots: 30,
+            homeFOW: 0, awayFOW: 0, faceoffsTotalGoal: 50,
+            homePIM: 0, awayPIM: 0, homePPO: 0, awayPPO: 0, homePPG: 0, awayPPG: 0,
+            currentLineHome: { f: 0, d: 0 }, currentLineAway: { f: 0, d: 0 }
+          });
+
+          // Shootout states
+          const [shootoutState, setShootoutState] = useState({
+            round: 1, currentShooterTeam: 'away', homeGoals: 0, awayGoals: 0, homeAttempts: 0, awayAttempts: 0, active: false
+          });
+
+          const [copiedTableId, setCopiedTableId] = useState(null);
+
+          const parseRawRosters = (tid) => {
+            try {
+              const skatersText = importSkaters[tid].trim();
+              const goaliesText = importGoalies[tid].trim();
+              
+              if (!skatersText && !goaliesText) {
+                setImportStatus(prev => ({ ...prev, [tid]: 'Erreur: Les cases sont vides.' }));
+                return;
+              }
+
+              const parsedSkaters = skatersText.split('\n').map((line, idx) => {
+                if (!line.trim()) return null;
+                const cols = line.split(/,|\t/).map(s => s.trim());
+                if (cols.length < 3) return null;
+                const name = cols[0];
+                const pos = cols[1].toUpperCase();
+                const ovr = parseInt(cols[2]) || 80;
+                const style = cols[3] || 'Polyvalent';
+                const phy = parseInt(cols[4]) || 80;
+                const tir = parseInt(cols[5]) || 80;
+                const cre = parseInt(cols[6]) || 80;
+                const def = parseInt(cols[7]) || 80;
+                const pat = parseInt(cols[8]) || 80;
+                const off = parseInt(cols[9]) || 80;
+                const man = parseInt(cols[10]) || 80;
+
+                return {
+                  id: `${tid}-sk-${idx}-${Math.random().toString(36).substr(2, 4)}`,
+                  tid, name, pos, ovr, attrs: { style, phy, tir, cre, def, pat, off, man },
+                  stats: { mj: 0, b: 0, a: 0, pts: 0, pm: 0, pun: 0 }
+                };
+              }).filter(Boolean);
+
+              const parsedGoalies = goaliesText.split('\n').map((line, idx) => {
+                if (!line.trim()) return null;
+                const cols = line.split(/,|\t/).map(s => s.trim());
+                if (cols.length < 3) return null;
+                const name = cols[0];
+                const pos = 'G';
+                const ovr = parseInt(cols[2]) || 80;
+                const style = cols[3] || 'Hybride';
+                const pot = cols[4] || 'Moyen';
+                const ref = parseInt(cols[5]) || 80;
+                const mit = parseInt(cols[6]) || 80;
+                const posit = parseInt(cols[7]) || 80;
+                const con = parseInt(cols[8]) || 80;
+                const jeu = parseInt(cols[9]) || 80;
+
+                return {
+                  id: `${tid}-g-${idx}-${Math.random().toString(36).substr(2, 4)}`,
+                  tid, name, pos, ovr, age: 21 + Math.floor(idx * 2) % 15, country: COUNTRIES[idx % COUNTRIES.length],
+                  attrs: { style, pot, ref, mit, posit, con, jeu },
+                  stats: { mj: 0, ma: 0, v: 0, d: 0, nd: 0, pm: 0, moy: 0, pctArrets: 0, tc: 0, arrets: 0, bc: 0, dp: 0 }
+                };
+              }).filter(Boolean);
+
+              const allParsed = [...parsedSkaters, ...parsedGoalies];
+              if (allParsed.length === 0) {
+                setImportStatus(prev => ({ ...prev, [tid]: 'Erreur: Format de texte invalide.' }));
+                return;
+              }
+
+              setPlayers(prev => [...prev.filter(p => p.tid !== tid), ...allParsed]);
+              
+              const align = {
+                forwards: Array(12).fill(null),
+                defense: Array(6).fill(null),
+                goalies: { starter: null, backup: null }
+              };
+
+              setAlignments(prev => ({ ...prev, [tid]: align }));
+              setImportStatus(prev => ({ ...prev, [tid]: `Succès ! ${parsedSkaters.length} patineurs & ${parsedGoalies.length} gardiens chargés.` }));
+            } catch (e) {
+              setImportStatus(prev => ({ ...prev, [tid]: 'Erreur lors de la lecture.' }));
+            }
+          };
+
+          const processImports = () => {
+            parseRawRosters('home');
+            parseRawRosters('away');
+            setActiveTab('alignment');
+          };
+
+          const getPosOrder = (pos) => {
+            const idx = POS_ORDER.indexOf(pos);
+            return idx === -1 ? 99 : idx;
+          };
+
+          const isPlayerAssigned = (tid, pid) => {
+            const align = alignments[tid];
+            if (!align) return false;
+            return align.forwards.includes(pid) || align.defense.includes(pid) || align.goalies.starter === pid || align.goalies.backup === pid;
+          };
+
+          const togglePlayerInAlignment = (tid, player) => {
+            setAlignments(prev => {
+              const align = { ...prev[tid] };
+              const pid = player.id;
+
+              if (align.forwards.includes(pid)) {
+                align.forwards = align.forwards.map(x => x === pid ? null : x);
+                return { ...prev, [tid]: align };
+              }
+              if (align.defense.includes(pid)) {
+                align.defense = align.defense.map(x => x === pid ? null : x);
+                return { ...prev, [tid]: align };
+              }
+              if (align.goalies.starter === pid) {
+                align.goalies.starter = null;
+                return { ...prev, [tid]: align };
+              }
+              if (align.goalies.backup === pid) {
+                align.goalies.backup = null;
+                return { ...prev, [tid]: align };
+              }
+
+              const isGoalie = player.pos === 'G';
+              const isDef = ['D', 'DD', 'DG'].includes(player.pos);
+
+              if (isGoalie) {
+                if (!align.goalies.starter) align.goalies.starter = pid;
+                else if (!align.goalies.backup) align.goalies.backup = pid;
+              } else if (isDef) {
+                const emptyIdx = align.defense.findIndex(x => x === null);
+                if (emptyIdx !== -1) align.defense[emptyIdx] = pid;
+              } else {
+                const emptyIdx = align.forwards.findIndex(x => x === null);
+                if (emptyIdx !== -1) align.forwards[emptyIdx] = pid;
+              }
+
+              return { ...prev, [tid]: align };
+            });
+          };
+
+          const autoFillRoster = (tid) => {
+            const teamPlayers = players.filter(p => p.tid === tid);
+            const fList = teamPlayers.filter(p => ['C', 'C/AD', 'C/AG', 'AG/C', 'AD/C', 'AG', 'AD', 'AG/AD', 'AD/AG'].includes(p.pos)).sort((a,b) => b.ovr - a.ovr);
+            const dList = teamPlayers.filter(p => ['D', 'DD', 'DG'].includes(p.pos)).sort((a,b) => b.ovr - a.ovr);
+            const gList = teamPlayers.filter(p => p.pos === 'G').sort((a,b) => b.ovr - a.ovr);
+
+            setAlignments(prev => {
+              const align = {
+                forwards: Array(12).fill(null),
+                defense: Array(6).fill(null),
+                goalies: { starter: null, backup: null }
+              };
+              for (let i = 0; i < 12; i++) {
+                if (fList[i]) align.forwards[i] = fList[i].id;
+              }
+              for (let i = 0; i < 6; i++) {
+                if (dList[i]) align.defense[i] = dList[i].id;
+              }
+              if (gList[0]) align.goalies.starter = gList[0].id;
+              if (gList[1]) align.goalies.backup = gList[1].id;
+
+              return { ...prev, [tid]: align };
+            });
+          };
+
+          const clearRoster = (tid) => {
+            setAlignments(prev => ({
+              ...prev,
+              [tid]: { forwards: Array(12).fill(null), defense: Array(6).fill(null), goalies: { starter: null, backup: null } }
+            }));
+          };
+
+          const confirmAlignmentAndSimulate = () => {
+            const foTotal = 40 + Math.floor(Math.random() * 31);
+            
+            const rollPPO = () => {
+              const r = Math.random();
+              if (r < 0.10) return 2; 
+              if (r < 0.60) return 3; 
+              if (r < 0.90) return 4; 
+              return 5;              
+            };
+
+            const homePPO = rollPPO(); 
+            const awayPPO = rollPPO(); 
+
+            const getTargetShots = () => {
+              const r = Math.random();
+              if (r < 0.15) return Math.floor(Math.random() * 5) + 15; 
+              if (r < 0.90) return Math.floor(Math.random() * 16) + 20; 
+              return Math.floor(Math.random() * 10) + 36; 
+            };
+
+            const targetHomeShots = getTargetShots();
+            const targetAwayShots = getTargetShots();
+
+            setUiState({
+              homeScore: 0, awayScore: 0, period: 1, isOT: false, isShootout: false,
+              homeShots: 0, awayShots: 0, homeHits: 0, awayHits: 0, homeBlocks: 0, awayBlocks: 0,
+              targetHomeShots, targetAwayShots,
+              homeFOW: 0, awayFOW: 0, faceoffsTotalGoal: foTotal,
+              homePIM: awayPPO * 2, awayPIM: homePPO * 2, 
+              homePPO: homePPO, awayPPO: awayPPO,
+              homePPG: 0, awayPPG: 0,
+              currentLineHome: { f: 0, d: 0 }, currentLineAway: { f: 0, d: 0 }
+            });
+
+            setPlayers(prev => prev.map(p => {
+              if (p.pos === 'G') {
+                return {
+                  ...p,
+                  stats: { mj: 0, ma: 0, v: 0, d: 0, nd: 0, pm: 0, moy: 0, pctArrets: 0, tc: 0, arrets: 0, bc: 0, dp: 0 }
+                };
+              } else {
+                return {
+                  ...p,
+                  stats: { mj: 0, b: 0, a: 0, pts: 0, pm: 0, pun: 0 }
+                };
+              }
+            }));
+
+            setShootoutState({ round: 1, currentShooterTeam: 'away', homeGoals: 0, awayGoals: 0, homeAttempts: 0, awayAttempts: 0, active: false });
+            setTimeRemaining(1200);
+            setEventsLog(["--- CLAIRON DE DÉPART - DÉBUT DU MATCH ---"]);
+            setGameStarted(true);
+            setActiveTab('live');
+          };
+
+          useEffect(() => {
+            let timer = null;
+            if (isRunning && !showIntermission) {
+              if (timeRemaining > 0 && !uiState.isShootout) {
+                timer = setInterval(() => tickGameSimulation(), simSpeed);
+              } else if (timeRemaining === 0 && !uiState.isShootout) {
+                handlePeriodPause();
+              } else if (uiState.isShootout) {
+                timer = setInterval(() => tickShootoutRound(), simSpeed * 5);
+              }
+            }
+            return () => clearInterval(timer);
+          }, [isRunning, timeRemaining, showIntermission, simSpeed, uiState, shootoutState]);
+
+          const tickGameSimulation = () => {
+            const timeStep = 15; 
+            setTimeRemaining(prev => Math.max(0, prev - timeStep));
+
+            const lineChangeChance = 0.25;
+            let nextHLine = { ...uiState.currentLineHome };
+            let nextALine = { ...uiState.currentLineAway };
+            if (Math.random() < lineChangeChance) {
+              nextHLine.f = Math.floor(Math.random() * (uiState.isOT ? 2 : 4));
+              nextHLine.d = Math.floor(Math.random() * (uiState.isOT ? 2 : 3));
+            }
+            if (Math.random() < lineChangeChance) {
+              nextALine.f = Math.floor(Math.random() * (uiState.isOT ? 2 : 4));
+              nextALine.d = Math.floor(Math.random() * (uiState.isOT ? 2 : 3));
+            }
+
+            setUiState(prev => ({
+              ...prev,
+              currentLineHome: nextHLine,
+              currentLineAway: nextALine
+            }));
+
+            const getIcePlayers = (tid, lf, ld) => {
+              const align = alignments[tid];
+              const teamSkaters = players.filter(p => p.tid === tid && p.pos !== 'G');
+              const startF = lf * 3;
+              const startD = ld * 2;
+              const onIceIds = [
+                align.forwards[startF], align.forwards[startF + 1], align.forwards[startF + 2],
+                align.defense[startD], align.defense[startD + 1]
+              ].filter(Boolean);
+              return teamSkaters.filter(p => onIceIds.includes(p.id));
+            };
+
+            const homeIce = getIcePlayers('home', nextHLine.f, nextHLine.d);
+            const awayIce = getIcePlayers('away', nextALine.f, nextALine.d);
+
+            if (homeIce.length === 0 || awayIce.length === 0) return;
+
+            let remainingTicks = Math.max(1, timeRemaining / 15);
+            if (uiState.period <= 3) remainingTicks += (3 - uiState.period) * 80;
+            
+            const homeShotProb = uiState.period <= 3 ? Math.max(0, (uiState.targetHomeShots - uiState.homeShots) / remainingTicks) : 0.12;
+            const awayShotProb = uiState.period <= 3 ? Math.max(0, (uiState.targetAwayShots - uiState.awayShots) / remainingTicks) : 0.12;
+
+            const processShot = (attackingTeam, shooterIce, goalieTeam) => {
+                const shooter = shooterIce[Math.floor(Math.random() * shooterIce.length)];
+                const defendingTeam = goalieTeam;
+                
+                const blockingSkill = (attackingTeam === 'home' ? awayIce : homeIce).reduce((sum, p) => sum + p.attrs.def, 0) / 5;
+                if (Math.random() < (blockingSkill / 240)) {
+                  setUiState(prev => ({ ...prev, [defendingTeam + 'Blocks']: prev[defendingTeam + 'Blocks'] + 1 }));
+                  return;
+                }
+
+                setUiState(prev => ({ ...prev, [attackingTeam + 'Shots']: prev[attackingTeam + 'Shots'] + 1 }));
+                
+                const defGoalieId = alignments[defendingTeam].goalies.starter;
+                const goalie = players.find(p => p.id === defGoalieId) || { ovr: 80, attrs: { ref: 80, posit: 80, mit: 80 }, name: 'Gardien' };
+                
+                const shooterSkill = shooter.attrs.tir || 80;
+                const goalieSkill = (goalie.attrs.ref + goalie.attrs.posit + goalie.attrs.mit) / 3 || 80;
+
+                const baseGoalProb = 0.095;
+                const skillGap = (shooterSkill - goalieSkill) * 0.003;
+                const isGoal = Math.random() < (baseGoalProb + skillGap);
+
+                if (isGoal) {
+                  setUiState(prev => ({ ...prev, [attackingTeam + 'Score']: prev[attackingTeam + 'Score'] + 1 }));
+
+                  const helpers = shooterIce.filter(p => p.id !== shooter.id);
+                  let assist1 = null;
+                  let assist2 = null;
+                  const assistRoll = Math.random();
+
+                  if (helpers.length > 0 && assistRoll < 0.75) { 
+                    assist1 = helpers[Math.floor(Math.random() * helpers.length)];
+                    const remainingHelpers = helpers.filter(p => p.id !== assist1.id);
+                    if (remainingHelpers.length > 0 && assistRoll < 0.45) { 
+                      assist2 = remainingHelpers[Math.floor(Math.random() * remainingHelpers.length)];
+                    }
+                  }
+
+                  const assistNames = [];
+                  if (assist1) assistNames.push(assist1.name);
+                  if (assist2) assistNames.push(assist2.name);
+                  const assistString = assistNames.length > 0 ? ` (Aides: ${assistNames.join(', ')})` : ' (sans aide)';
+
+                  addEvent(`[${formatTime(timeRemaining)}] BUT ${attackingTeam === 'home' ? (teamNames.home || 'DOMICILE') : (teamNames.away || 'VISITEUR')}! Marqué par ${shooter.name}${assistString}.`);
+
+                  setPlayers(prev => prev.map(p => {
+                    if (p.id === shooter.id) {
+                      return { 
+                        ...p, 
+                        stats: { ...p.stats, b: p.stats.b + 1, pts: p.stats.pts + 1, pm: p.stats.pm + 1 } 
+                      };
+                    }
+                    if (assist1 && p.id === assist1.id) {
+                      return { 
+                        ...p, 
+                        stats: { ...p.stats, a: p.stats.a + 1, pts: p.stats.pts + 1, pm: p.stats.pm + 1 } 
+                      };
+                    }
+                    if (assist2 && p.id === assist2.id) {
+                      return { 
+                        ...p, 
+                        stats: { ...p.stats, a: p.stats.a + 1, pts: p.stats.pts + 1, pm: p.stats.pm + 1 } 
+                      };
+                    }
+                    if (shooterIce.some(teammate => teammate.id === p.id)) {
+                      return { 
+                        ...p, 
+                        stats: { ...p.stats, pm: p.stats.pm + 1 } 
+                      };
+                    }
+                    const opposingIce = attackingTeam === 'home' ? awayIce : homeIce;
+                    if (opposingIce.some(opponent => opponent.id === p.id)) {
+                      return { 
+                        ...p, 
+                        stats: { ...p.stats, pm: p.stats.pm - 1 } 
+                      };
+                    }
+                    return p;
+                  }));
+
+                  if (uiState.isOT) setTimeRemaining(0);
+                }
+            };
+
+            if (Math.random() < homeShotProb) processShot('home', homeIce, 'away');
+            else if (Math.random() < awayShotProb) processShot('away', awayIce, 'home');
+
+            if (Math.random() < 0.15) {
+              const hitTeam = Math.random() < 0.5 ? 'home' : 'away';
+              setUiState(prev => ({ ...prev, [hitTeam + 'Hits']: prev[hitTeam + 'Hits'] + 1 }));
+            }
+          };
+
+          const handlePeriodPause = () => {
+            setIsRunning(false);
+            setShowIntermission(true);
+            addEvent(`--- FIN DE LA PÉRIODE ${uiState.period} ---`);
+          };
+
+          const tickShootoutRound = () => {
+            const isHomeShooter = shootoutState.currentShooterTeam === 'home';
+            const shootingTeamId = shootoutState.currentShooterTeam;
+            const defendingTeamId = isHomeShooter ? 'away' : 'home';
+
+            const pool = players.filter(p => p.tid === shootingTeamId && p.pos !== 'G');
+            const shooter = pool[Math.floor(Math.random() * pool.length)] || { name: 'Tireur' };
+            const goalieId = alignments[defendingTeamId].goalies.starter;
+            const goalie = players.find(p => p.id === goalieId) || { name: 'Gardien' };
+
+            const isGoal = Math.random() < 0.32;
+
+            if (isGoal) {
+              addEvent(`[FUSILLADE R${shootoutState.round}] BUT! ${shooter.name} marque contre ${goalie.name}.`);
+              setShootoutState(prev => ({
+                ...prev,
+                homeGoals: isHomeShooter ? prev.homeGoals + 1 : prev.homeGoals,
+                awayGoals: !isHomeShooter ? prev.awayGoals + 1 : prev.awayGoals
+              }));
+            } else {
+              addEvent(`[FUSILLADE R${shootoutState.round}] ARRÊT! ${goalie.name} bloque le lancer de ${shooter.name}.`);
+            }
+
+            setShootoutState(prev => {
+              const nextState = { ...prev };
+              if (isHomeShooter) nextState.homeAttempts++;
+              else nextState.awayAttempts++;
+
+              const isRoundDone = nextState.homeAttempts === nextState.awayAttempts;
+
+              if (isRoundDone) {
+                const homeWon = nextState.homeGoals > nextState.awayGoals;
+                const tied = nextState.homeGoals === nextState.awayGoals;
+
+                if (nextState.round >= 3 && !tied) {
+                  setUiState(u => ({
+                    ...u,
+                    homeScore: u.homeScore + (homeWon ? 1 : 0),
+                    awayScore: u.awayScore + (!homeWon ? 1 : 0),
+                    isShootout: false
+                  }));
+                  setTimeout(() => finalizeGameStats(homeWon), 150);
+                  nextState.active = false;
+                } else {
+                  nextState.round++;
+                }
+              }
+
+              nextState.currentShooterTeam = isHomeShooter ? 'away' : 'home';
+              return nextState;
+            });
+          };
+
+          const startNextPeriod = () => {
+            setShowIntermission(false);
+            if (uiState.period < 3) {
+              setUiState(prev => ({ ...prev, period: prev.period + 1 }));
+              setTimeRemaining(1200);
+              setIsRunning(true);
+              addEvent(`--- DÉBUT DE LA PÉRIODE ${uiState.period + 1} ---`);
+            } else {
+              if (uiState.homeScore === uiState.awayScore) {
+                setUiState(prev => ({ ...prev, period: 4, isOT: true }));
+                setTimeRemaining(300);
+                setIsRunning(true);
+                addEvent(`--- EN ROUTE VERS LA PROLONGATION (3 CONTRE 3) ---`);
+              } else {
+                finalizeGameStats();
+              }
+            }
+          };
+
+          const finalizeGameStats = (soHomeWon = null) => {
+            setIsRunning(false);
+            const homeWon = soHomeWon !== null ? soHomeWon : (uiState.homeScore > uiState.awayScore);
+            const isOTorSO = uiState.period >= 4;
+
+            let finalHomeFOW = uiState.homeFOW;
+            let finalAwayFOW = uiState.awayFOW;
+            const totalRemainingFO = uiState.faceoffsTotalGoal - (finalHomeFOW + finalAwayFOW);
+            if (totalRemainingFO > 0) {
+              const extraHome = Math.floor(totalRemainingFO * 0.52);
+              finalHomeFOW += extraHome;
+              finalAwayFOW += (totalRemainingFO - extraHome);
+            }
+
+            let finalHomePPG = 0;
+            for (let i = 0; i < uiState.homePPO; i++) {
+              if (Math.random() < 0.21) finalHomePPG++;
+            }
+            finalHomePPG = Math.min(finalHomePPG, uiState.homeScore);
+
+            let finalAwayPPG = 0;
+            for (let i = 0; i < uiState.awayPPO; i++) {
+              if (Math.random() < 0.21) finalAwayPPG++;
+            }
+            finalAwayPPG = Math.min(finalAwayPPG, uiState.awayScore);
+
+            setUiState(prev => ({
+              ...prev,
+              homeFOW: finalHomeFOW,
+              awayFOW: finalAwayFOW,
+              homePPG: finalHomePPG,
+              awayPPG: finalAwayPPG
+            }));
+
+            const distributePIMToPlayers = (tid, totalPIM) => {
+              let remainingMin = totalPIM;
+              const distribution = {};
+              const teamSkaters = players.filter(p => p.tid === tid && p.pos !== 'G' && isPlayerAssigned(tid, p.id));
+              
+              teamSkaters.forEach(p => { distribution[p.id] = 0; });
+
+              while (remainingMin > 0 && teamSkaters.length > 0) {
+                const selected = teamSkaters[Math.floor(Math.random() * teamSkaters.length)];
+                distribution[selected.id] += 2;
+                remainingMin -= 2;
+              }
+              return distribution;
+            };
+
+            const homePIMDist = distributePIMToPlayers('home', uiState.homePIM);
+            const awayPIMDist = distributePIMToPlayers('away', uiState.awayPIM);
+
+            setPlayers(prev => prev.map(p => {
+              const assigned = isPlayerAssigned(p.tid, p.id);
+              if (!assigned) return p;
+
+              if (p.pos === 'G') {
+                const isStarter = alignments[p.tid].goalies.starter === p.id;
+                if (!isStarter) return p;
+
+                const bc = p.tid === 'home' ? uiState.awayScore : uiState.homeScore;
+                const tc = p.tid === 'home' ? uiState.awayShots : uiState.homeShots;
+                const arrets = Math.max(0, tc - bc);
+                const win = (p.tid === 'home' && homeWon) || (p.tid === 'away' && !homeWon);
+                const otLoss = isOTorSO && !win;
+
+                return {
+                  ...p,
+                  stats: {
+                    ...p.stats,
+                    mj: 1,
+                    ma: 1, 
+                    v: win ? 1 : 0,
+                    d: !win && !otLoss ? 1 : 0,
+                    dp: otLoss ? 1 : 0,
+                    tc, arrets, bc,
+                    moy: bc.toFixed(2),
+                    pctArrets: tc > 0 ? (arrets / tc).toFixed(3) : '.000'
+                  }
+                };
+              } else {
+                const assignedPIM = p.tid === 'home' ? (homePIMDist[p.id] || 0) : (awayPIMDist[p.id] || 0);
+                return {
+                  ...p,
+                  stats: {
+                    ...p.stats,
+                    mj: 1,
+                    pun: p.stats.pun + assignedPIM
+                  }
+                };
+              }
+            }));
+
+            addEvent(`*** PARTIE TERMINÉE. GAGNANT : ${homeWon ? (teamNames.home || 'DOMICILE') : (teamNames.away || 'VISITEUR')} ***`);
+            setActiveTab('stats');
+          };
+
+          const handleStartNextPeriod = () => {
+            if (uiState.period === 4 && uiState.homeScore === uiState.awayScore) {
+              setShowIntermission(false);
+              setUiState(prev => ({ ...prev, isOT: false, isShootout: true }));
+              setShootoutState(s => ({ ...s, active: true }));
+              setIsRunning(true);
+              addEvent(`--- DEBUT DES TIRS DE BARRAGE ---`);
+            } else {
+              startNextPeriod();
+            }
+          };
+
+          const addEvent = (msg) => setEventsLog(prev => [msg, ...prev].slice(0, 50));
+          
+          const formatTime = (seconds) => {
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+          };
+
+          const toggleSim = () => setIsRunning(!isRunning);
+
+          const resetSimState = () => {
+            setIsRunning(false);
+            setShowIntermission(false);
+            setTimeRemaining(1200);
+            setEventsLog([]);
+            setUiState({
+              homeScore: 0, awayScore: 0, period: 1, isOT: false, isShootout: false,
+              homeShots: 0, awayShots: 0, homeHits: 0, awayHits: 0, homeBlocks: 0, awayBlocks: 0,
+              targetHomeShots: 30, targetAwayShots: 30,
+              homeFOW: 0, awayFOW: 0, faceoffsTotalGoal: 50,
+              homePIM: 0, awayPIM: 0, homePPO: 0, awayPPO: 0, homePPG: 0, awayPPG: 0,
+              currentLineHome: { f: 0, d: 0 }, currentLineAway: { f: 0, d: 0 }
+            });
+            setShootoutState({ round: 1, currentShooterTeam: 'away', homeGoals: 0, awayGoals: 0, homeAttempts: 0, awayAttempts: 0, active: false });
+            setGameStarted(false);
+            setActiveTab('prep');
+          };
+
+          const handleCopyTable = (tableId) => {
+            const el = document.getElementById(tableId);
+            if (!el) return;
+
+            let text = "";
+            const rows = el.querySelectorAll('tr');
+            rows.forEach(r => {
+              const cols = r.querySelectorAll('th, td');
+              const rowData = Array.from(cols).map(c => c.innerText.trim()).join('\t');
+              text += rowData + '\n';
+            });
+
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = text;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            setCopiedTableId(tableId);
+            setTimeout(() => setCopiedTableId(null), 2000);
+          };
+
+          const renderSlot = (label, pid, tid) => {
+            const player = players.find(p => p.id === pid);
+            return (
+              <div className={`flex justify-between items-center p-2 rounded-xl border text-xs transition-all ${player ? 'bg-sky-950/40 border-sky-600/50 text-white' : 'bg-slate-950 border-slate-800 text-slate-600'}`}>
+                <span className="font-mono text-[10px] font-bold text-sky-400 w-24 truncate mr-2">{label}</span>
+                <span className="truncate flex-1 font-semibold">{player ? player.name : <span className="text-slate-700 italic">Vide</span>}</span>
+                {player && (
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); togglePlayerInAlignment(tid, player); }} 
+                    className="text-red-400 hover:text-red-300 ml-2 font-bold px-1.5 py-0.5 rounded hover:bg-red-950/30 text-xs"
+                  >
+                    &times;
+                  </button>
+                )}
+              </div>
+            );
+          };
+
+          return (
+            <div className="min-h-screen bg-slate-950 text-slate-300 p-4 md:p-8 font-sans antialiased selection:bg-sky-600/30 selection:text-white">
+              <div className="max-w-7xl mx-auto space-y-6">
+                
+                {/* BRAND HEADER */}
+                <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-6 border-b border-slate-900">
+                  <div>
+                    <h1 className="text-2xl font-black text-white tracking-tight flex items-center">
+                      <Shield className="mr-2.5 text-sky-500 fill-sky-500/10 w-6 h-6" />
+                      EA SPORTS <span className="text-sky-500 ml-1.5 font-bold">PRO SIMULATOR</span>
+                    </h1>
+                    <p className="text-slate-500 text-xs mt-1 uppercase tracking-wider font-semibold font-mono font-bold">Analyse Tactique & Simulation Logique</p>
+                  </div>
+                  <span className="text-[10px] bg-slate-900 text-slate-400 border border-slate-850 px-3 py-1.5 rounded-full font-mono font-bold">
+                    BUILD 2026.2.14 - PRODUCTION
+                  </span>
+                </header>
+
+                {/* WORKSPACE NAVIGATION */}
+                <div className="flex flex-wrap gap-2 border-b border-slate-900 pb-2 items-center">
+                  <button 
+                    onClick={() => setActiveTab('prep')} 
+                    className={`flex items-center gap-2 px-4 py-2 text-xs font-black tracking-widest uppercase rounded-xl transition-all ${activeTab === 'prep' ? 'bg-sky-950 border border-sky-800/40 text-sky-400' : 'text-slate-500 hover:text-slate-300'}`}
+                  >
+                    <ClipboardPaste className="w-4 h-4" /> 1. Préparation
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('alignment')} 
+                    className={`flex items-center gap-2 px-4 py-2 text-xs font-black tracking-widest uppercase rounded-xl transition-all ${activeTab === 'alignment' ? 'bg-sky-950 border border-sky-800/40 text-sky-400' : 'text-slate-500 hover:text-slate-300'}`}
+                  >
+                    <Users className="w-4 h-4" /> 2. Alignements
+                  </button>
+
+                  {/* Hidden until Game Commences */}
+                  {gameStarted && (
+                    <>
+                      <button 
+                        onClick={() => setActiveTab('live')} 
+                        className={`flex items-center gap-2 px-4 py-2 text-xs font-black tracking-widest uppercase rounded-xl transition-all ${activeTab === 'live' ? 'bg-sky-950 border border-sky-800/40 text-sky-400' : 'text-slate-500 hover:text-slate-300'}`}
+                      >
+                        <Activity className="w-4 h-4" /> 3. Match en Direct
+                      </button>
+                      <button 
+                        onClick={() => setActiveTab('stats')} 
+                        className={`flex items-center gap-2 px-4 py-2 text-xs font-black tracking-widest uppercase rounded-xl transition-all ${activeTab === 'stats' ? 'bg-sky-950 border border-sky-800/40 text-sky-400' : 'text-slate-500 hover:text-slate-300'}`}
+                      >
+                        <Trophy className="w-4 h-4" /> 4. Statistiques
+                      </button>
+                    </>
+                  )}
+
+                  {!gameStarted && players.length > 0 && (
+                    <button 
+                      onClick={confirmAlignmentAndSimulate}
+                      className="ml-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-600/10 transition-all flex items-center gap-2 animate-pulse"
+                    >
+                      <Play className="w-3.5 h-3.5" /> Commencer la partie
+                    </button>
+                  )}
+                </div>
+
+                {/* 1. PREPARATION PANEL (INPUT STAGE) */}
+                {activeTab === 'prep' && (
+                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
+                    <div className="space-y-2">
+                      <h2 className="text-xl font-black text-white flex items-center gap-2">
+                        <ClipboardPaste className="w-6 h-6 text-sky-500" /> IMPORTATION DES EFFECTIFS BRUTS
+                      </h2>
+                      <p className="text-slate-400 text-xs font-medium">Entrez les noms d'équipes et collez vos feuilles de calcul directement.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Nom de l'équipe locale</label>
+                        <input 
+                          type="text" 
+                          value={teamNames.home} 
+                          placeholder="Équipe Locale"
+                          onChange={e => setTeamNames(prev => ({ ...prev, home: e.target.value }))} 
+                          className="border border-slate-800 bg-slate-900/60 text-white rounded-lg p-2.5 text-xs focus:ring-sky-500 focus:border-sky-500 outline-none w-full font-bold transition-all" 
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Nom de l'équipe visiteuse</label>
+                        <input 
+                          type="text" 
+                          value={teamNames.away} 
+                          placeholder="Équipe Visiteuse"
+                          onChange={e => setTeamNames(prev => ({ ...prev, away: e.target.value }))} 
+                          className="border border-slate-800 bg-slate-900/60 text-white rounded-lg p-2.5 text-xs focus:ring-sky-500 focus:border-sky-500 outline-none w-full font-bold transition-all" 
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                      {['home', 'away'].map(tid => (
+                        <div key={tid} className="bg-slate-950/40 p-4 rounded-xl border border-slate-850 space-y-4">
+                          <h3 className="font-black text-sm text-sky-400 flex justify-between items-center border-b border-slate-800 pb-2">
+                            <div className="flex items-center gap-3">
+                              <input type="color" value={teamColors[tid]} onChange={e => setTeamColors(p => ({...p, [tid]: e.target.value}))} className="w-6 h-6 rounded cursor-pointer bg-slate-950 border border-slate-800" title="Couleur de l'équipe" />
+                              {teamNames[tid] || (tid === 'home' ? 'Équipe Locale' : 'Équipe Visiteuse')}
+                            </div>
+                            <span className="text-[10px] bg-slate-800 text-slate-400 py-1 px-2.5 rounded-full font-mono">
+                              {players.filter(p => p.tid === tid).length} Joueurs Chargés
+                            </span>
+                          </h3>
+                          
+                          <div className="space-y-1">
+                            <label className="font-bold text-xs text-slate-300 block">1. Patineurs de champ</label>
+                            <div className="text-[9px] text-slate-500 font-mono">Nom, POS, OVR, Style, Physique, Tir, Création, Défensive, Patinage, Offensive, Maniement</div>
+                            <textarea 
+                              className="w-full h-32 p-2 text-[11px] font-mono border border-slate-800 bg-slate-950 rounded-lg text-slate-200 focus:ring-sky-500 focus:border-sky-500 custom-scrollbar outline-none transition-all"
+                              placeholder="Collez les données ici..."
+                              value={importSkaters[tid]}
+                              onChange={(e) => setImportSkaters(prev => ({ ...prev, [tid]: e.target.value }))}
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="font-bold text-xs text-slate-300 block">2. Gardiens de But</label>
+                            <div className="text-[9px] text-slate-500 font-mono">Nom, G, OVR, Style, Potentiel, Réflexe, Mitaine, Positionnement, Constance, JeuRondelle</div>
+                            <textarea 
+                              className="w-full h-20 p-2 text-[11px] font-mono border border-slate-800 bg-slate-950 rounded-lg text-slate-200 focus:ring-sky-500 focus:border-sky-500 custom-scrollbar outline-none transition-all"
+                              placeholder="Collez les gardiens ici..."
+                              value={importGoalies[tid]}
+                              onChange={(e) => setImportGoalies(prev => ({ ...prev, [tid]: e.target.value }))}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between pt-2">
+                            <span className={`text-xs font-bold ${importStatus[tid]?.includes('Erreur') ? 'text-red-400' : 'text-emerald-400'}`}>
+                              {importStatus[tid]}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex justify-center pt-4">
+                      <button 
+                        onClick={processImports}
+                        className="bg-sky-600 hover:bg-sky-500 text-white px-10 py-4 rounded-xl font-bold text-sm shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all flex items-center space-x-2"
+                      >
+                        <span>DÉCODER ET CRÉER LES ALIGNEMENTS</span>
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. ALIGNEMENTS */}
+                {activeTab === 'alignment' && (
+                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-800">
+                      <div>
+                        <h2 className="text-xl font-black text-white flex items-center gap-2">
+                          <Users className="w-6 h-6 text-sky-500" /> CONSTITUTION DE L'ALIGNEMENT
+                        </h2>
+                        <p className="text-slate-400 text-xs mt-1">Cochez vos joueurs pour les placer automatiquement dans l'alignement de match.</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => setAlignmentTeam('home')} 
+                          className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border ${alignmentTeam === 'home' ? 'bg-sky-600 text-white border-sky-500 shadow-[0_0_15px_rgba(37,99,235,0.3)]' : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'}`}
+                        >
+                          {teamNames.home || 'ÉQUIPE LOCALE'}
+                        </button>
+                        <button 
+                          onClick={() => setAlignmentTeam('away')} 
+                          className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border ${alignmentTeam === 'away' ? 'bg-sky-600 text-white border-sky-500 shadow-[0_0_15px_rgba(37,99,235,0.3)]' : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'}`}
+                        >
+                          {teamNames.away || 'ÉQUIPE VISITEUSE'}
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <button onClick={() => autoFillRoster(alignmentTeam)} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-lg border border-slate-700 transition-colors">Remplissage Auto</button>
+                      <button onClick={() => clearRoster(alignmentTeam)} className="px-3 py-1.5 bg-red-950/40 hover:bg-red-900/40 text-red-400 text-xs font-bold rounded-lg border border-red-900/50 transition-colors">Vider</button>
+                    </div>
+
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                      <div className="xl:col-span-2 space-y-6">
+                        
+                        {/* Attaquants */}
+                        <div className="bg-slate-950 p-5 rounded-xl border border-slate-800 shadow-lg">
+                           <h3 className="font-black text-white text-sm uppercase tracking-wider mb-4 pb-2 border-b border-slate-700 flex items-center gap-2">
+                             <Activity className="w-4 h-4 text-sky-500" /> Attaquants (12)
+                           </h3>
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             {[
+                               { title: 'Trio 1', ag: 2, c: 0, ad: 1 },
+                               { title: 'Trio 2', ag: 5, c: 3, ad: 4 },
+                               { title: 'Trio 3', ag: 8, c: 6, ad: 7 },
+                               { title: 'Trio 4', ag: 11, c: 9, ad: 10 }
+                             ].map((trio, i) => (
+                               <div key={`trio-${i}`} className="bg-slate-900/50 border border-slate-800/80 rounded-lg p-3 space-y-2">
+                                 <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{trio.title}</h4>
+                                 {}
+                                 {renderSlot('AG', alignments[alignmentTeam].forwards[trio.ag], alignmentTeam)}
+                                 {renderSlot('C', alignments[alignmentTeam].forwards[trio.c], alignmentTeam)}
+                                 {renderSlot('AD', alignments[alignmentTeam].forwards[trio.ad], alignmentTeam)}
+                               </div>
+                             ))}
+                           </div>
+                        </div>
+
+                        {/* Défenseurs & Gardiens */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          {/* Défenseurs */}
+                          <div className="bg-slate-950 p-5 rounded-xl border border-slate-800 shadow-lg">
+                             <h3 className="font-black text-white text-sm uppercase tracking-wider mb-4 pb-2 border-b border-slate-700 flex items-center gap-2">
+                               <Shield className="w-4 h-4 text-emerald-500" /> Défenseurs (6)
+                             </h3>
+                             <div className="space-y-4">
+                               {[
+                                 { title: 'Paire 1', dg: 1, dd: 0 },
+                                 { title: 'Paire 2', dg: 3, dd: 2 },
+                                 { title: 'Paire 3', dg: 5, dd: 4 }
+                               ].map((paire, i) => (
+                                 <div key={`paire-${i}`} className="bg-slate-900/50 border border-slate-800/80 rounded-lg p-3 space-y-2">
+                                   <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{paire.title}</h4>
+                                   {}
+                                   {renderSlot('DG', alignments[alignmentTeam].defense[paire.dg], alignmentTeam)}
+                                   {renderSlot('DD', alignments[alignmentTeam].defense[paire.dd], alignmentTeam)}
+                                 </div>
+                               ))}
+                             </div>
+                          </div>
+
+                          {/* Gardiens */}
+                          <div className="bg-slate-950 p-5 rounded-xl border border-slate-800 shadow-lg">
+                             <h3 className="font-black text-white text-sm uppercase tracking-wider mb-4 pb-2 border-b border-slate-700 flex items-center gap-2">
+                               <Users className="w-4 h-4 text-amber-500" /> Gardiens (2)
+                             </h3>
+                             <div className="bg-slate-900/50 border border-slate-800/80 rounded-lg p-3 space-y-2">
+                               <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Partant & Substitut</h4>
+                               {renderSlot('Partant', alignments[alignmentTeam].goalies.starter, alignmentTeam)}
+                               {renderSlot('Substitut', alignments[alignmentTeam].goalies.backup, alignmentTeam)}
+                             </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Roster Pool */}
+                      <div className="bg-slate-950 p-5 rounded-xl border border-slate-800 flex flex-col h-[850px]">
+                        <h3 className="font-black text-white text-sm uppercase tracking-wider mb-4 pb-2 border-b border-slate-700">Joueurs Disponibles</h3>
+                        <div className="flex-1 overflow-y-auto custom-scrollbar pr-3 space-y-6">
+                           
+                           {}
+                           {[
+                             { title: 'Attaquants', filter: p => !['D', 'DD', 'DG', 'G'].includes(p.pos), color: 'text-sky-400' },
+                             { title: 'Défenseurs', filter: p => ['D', 'DD', 'DG'].includes(p.pos), color: 'text-emerald-400' },
+                             { title: 'Gardiens', filter: p => p.pos === 'G', color: 'text-amber-400' }
+                           ].map(group => {
+                             const groupPlayers = players.filter(p => p.tid === alignmentTeam && group.filter(p)).sort((a,b) => b.ovr - a.ovr);
+                             if (groupPlayers.length === 0) return null;
+                             
+                             return (
+                               <div key={group.title} className="space-y-2 relative">
+                                 <div className="sticky top-0 bg-slate-950/95 backdrop-blur-sm pt-2 pb-2 z-10 border-b border-slate-800/50">
+                                   <h4 className={`text-[10px] font-black uppercase tracking-widest ${group.color}`}>{group.title}</h4>
+                                 </div>
+                                 <div className="space-y-1.5">
+                                   {groupPlayers.map(p => {
+                                     const isAssigned = isPlayerAssigned(alignmentTeam, p.id);
+                                     return (
+                                       <div key={p.id} onClick={() => togglePlayerInAlignment(alignmentTeam, p)} className={`p-2.5 rounded-lg border text-xs cursor-pointer transition-all flex justify-between items-center ${isAssigned ? 'opacity-40 bg-slate-900 border-slate-800/50' : 'bg-slate-800/80 border-slate-700 hover:bg-sky-900/40 hover:border-sky-500/50 text-white shadow-sm'}`}>
+                                         <div className="flex items-center gap-3">
+                                           <span className={`inline-block w-8 text-[10px] font-black px-1.5 py-0.5 rounded text-center ${isAssigned ? 'bg-slate-800 text-slate-500' : 'bg-slate-900 text-slate-300'}`}>{p.pos}</span>
+                                           <span className="font-semibold">{p.name}</span>
+                                         </div>
+                                         <span className={`font-mono px-2 py-1 rounded text-[10px] font-bold ${isAssigned ? 'bg-slate-900 text-slate-600' : 'bg-sky-950/50 text-sky-400 border border-sky-900/30 shadow-inner'}`}>{p.ovr}</span>
+                                       </div>
+                                     );
+                                   })}
+                                 </div>
+                               </div>
+                             );
+                           })}
+
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. MATCH EN DIRECT */}
+                {activeTab === 'live' && (
+                  <div className="space-y-6">
+                    {/* Scoreboard */}
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center shadow-2xl relative overflow-hidden">
+                      <div className="absolute inset-0 opacity-5 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,1)_50%,transparent_75%)] bg-[length:20px_20px]"></div>
+                      
+                      <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
+                        <div className="flex-1 flex flex-col items-center">
+                          <div className="w-16 h-16 rounded-full mb-2 border-4 border-slate-800 shadow-xl" style={{backgroundColor: teamColors.home}}></div>
+                          <h2 className="text-xl font-black text-white uppercase">{teamNames.home || 'Domicile'}</h2>
+                          <div className="text-6xl font-black text-white mt-2 font-mono tracking-tighter drop-shadow-[0_0_15px_rgba(234,10,42,0.3)]" style={{textShadow: `0 0 20px ${teamColors.home}`}}>{uiState.homeScore}</div>
+                          <div className="text-xs text-slate-500 font-bold mt-2 uppercase tracking-widest">Tirs: <span className="text-white">{uiState.homeShots}</span></div>
+                        </div>
+
+                        <div className="flex-1 flex flex-col items-center justify-center space-y-4">
+                          <div className="bg-slate-950 border border-slate-800 rounded-xl px-6 py-3 flex flex-col items-center shadow-inner">
+                            <span className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">
+                              {uiState.isShootout ? 'Fusillade' : (uiState.isOT ? 'Prolongation' : `Période ${uiState.period}`)}
+                            </span>
+                            <span className="text-4xl font-black text-sky-400 font-mono tracking-wider drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]">
+                              {uiState.isShootout ? 'TIR' : formatTime(timeRemaining)}
+                            </span>
+                          </div>
+                          
+                          <div className="flex gap-2">
+                             <button onClick={toggleSim} className={`p-3 rounded-full shadow-lg ${isRunning ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30 shadow-red-500/20' : 'bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30 shadow-emerald-500/20'} transition-all`}>
+                               {isRunning ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+                             </button>
+                             {showIntermission && (
+                               <button onClick={handleStartNextPeriod} className="p-3 rounded-full bg-sky-500/20 text-sky-400 hover:bg-sky-500/30 transition-all shadow-lg shadow-sky-500/20">
+                                 <ChevronRight className="w-6 h-6" />
+                               </button>
+                             )}
+                          </div>
+                        </div>
+
+                        <div className="flex-1 flex flex-col items-center">
+                          <div className="w-16 h-16 rounded-full mb-2 border-4 border-slate-800 shadow-xl" style={{backgroundColor: teamColors.away}}></div>
+                          <h2 className="text-xl font-black text-white uppercase">{teamNames.away || 'Visiteur'}</h2>
+                          <div className="text-6xl font-black text-white mt-2 font-mono tracking-tighter drop-shadow-[0_0_15px_rgba(0,32,91,0.3)]" style={{textShadow: `0 0 20px ${teamColors.away}`}}>{uiState.awayScore}</div>
+                          <div className="text-xs text-slate-500 font-bold mt-2 uppercase tracking-widest">Tirs: <span className="text-white">{uiState.awayShots}</span></div>
+                        </div>
+                      </div>
+                      
+                      {/* Shootout overlay */}
+                      {uiState.isShootout && (
+                        <div className="mt-6 pt-6 border-t border-slate-800 flex justify-center gap-8 relative z-10">
+                           <div className="text-center">
+                             <div className="text-xs text-slate-400 uppercase font-bold mb-1">Buts (Dom)</div>
+                             <div className="text-2xl font-black text-white font-mono">{shootoutState.homeGoals} <span className="text-slate-600 text-sm">/ {shootoutState.homeAttempts}</span></div>
+                           </div>
+                           <div className="text-center">
+                             <div className="text-xs text-slate-400 uppercase font-bold mb-1">Ronde</div>
+                             <div className="text-xl font-black text-sky-400 font-mono drop-shadow-[0_0_5px_rgba(56,189,248,0.5)]">#{shootoutState.round}</div>
+                           </div>
+                           <div className="text-center">
+                             <div className="text-xs text-slate-400 uppercase font-bold mb-1">Buts (Vis)</div>
+                             <div className="text-2xl font-black text-white font-mono">{shootoutState.awayGoals} <span className="text-slate-600 text-sm">/ {shootoutState.awayAttempts}</span></div>
+                           </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                       {/* Lignes sur la glace */}
+                       <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-4 shadow-lg">
+                         <h3 className="font-bold text-white text-xs uppercase tracking-wider pb-2 border-b border-slate-800 flex items-center gap-2"><Users className="w-4 h-4 text-sky-500"/> Sur la glace</h3>
+                         <div className="space-y-4">
+                           <div>
+                             <div className="text-[10px] uppercase font-bold text-slate-500 mb-1">{teamNames.home || 'Domicile'}</div>
+                             <div className="bg-slate-950 p-2 rounded border border-slate-800 text-xs font-semibold text-white shadow-inner">Ligne Att: <span className="text-sky-400">{uiState.currentLineHome.f + 1}</span> | Ligne Déf: <span className="text-sky-400">{uiState.currentLineHome.d + 1}</span></div>
+                           </div>
+                           <div>
+                             <div className="text-[10px] uppercase font-bold text-slate-500 mb-1">{teamNames.away || 'Visiteur'}</div>
+                             <div className="bg-slate-950 p-2 rounded border border-slate-800 text-xs font-semibold text-white shadow-inner">Ligne Att: <span className="text-sky-400">{uiState.currentLineAway.f + 1}</span> | Ligne Déf: <span className="text-sky-400">{uiState.currentLineAway.d + 1}</span></div>
+                           </div>
+                           <div>
+                             <div className="text-[10px] uppercase font-bold text-slate-500 mb-1 flex justify-between">Vitesse Sim <span>{simSpeed}ms</span></div>
+                             <input type="range" min="10" max="1000" value={simSpeed} onChange={e => setSimSpeed(Number(e.target.value))} className="w-full accent-sky-500" />
+                           </div>
+                           <button onClick={resetSimState} className="w-full py-2 bg-red-950/30 hover:bg-red-900/40 text-red-400 text-xs font-bold rounded border border-red-900/50 flex items-center justify-center gap-2 transition-all mt-4">
+                             <RotateCcw className="w-3 h-3" /> Réinitialiser le match
+                           </button>
+                         </div>
+                       </div>
+
+                       {/* Feed Events */}
+                       <div className="md:col-span-1 bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col h-96 shadow-lg">
+                         <h3 className="font-bold text-white text-xs uppercase tracking-wider pb-2 border-b border-slate-800 flex items-center gap-2"><Activity className="w-4 h-4 text-sky-500"/> Déroulement du match</h3>
+                         <div className="flex-1 overflow-y-auto mt-2 space-y-1 custom-scrollbar pr-2">
+                           {eventsLog.map((ev, i) => (
+                             <div key={i} className={`text-xs p-2 rounded border transition-all ${ev.includes('BUT') ? 'bg-sky-950/40 border-sky-800/50 text-sky-100 font-bold shadow-[0_0_10px_rgba(56,189,248,0.1)]' : ev.includes('FIN') || ev.includes('DÉBUT') ? 'bg-slate-800/50 border-slate-700 text-slate-300 font-semibold text-center my-2 uppercase tracking-widest text-[10px]' : 'border-transparent text-slate-400 border-b border-slate-800/50'}`}>
+                               {ev}
+                             </div>
+                           ))}
+                           {eventsLog.length === 0 && <div className="text-slate-600 text-xs italic text-center mt-10">En attente du début de la partie...</div>}
+                         </div>
+                       </div>
+
+                       {/* Arène Virtuelle Info */}
+                       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
+                         <div className="space-y-4">
+                           <div className="w-12 h-12 bg-sky-500/10 text-sky-400 rounded-full flex items-center justify-center">
+                             <Trophy className="w-6 h-6" />
+                           </div>
+                           <div className="space-y-1">
+                             <h2 className="text-lg font-black text-white uppercase">ARÈNE VIRTUELLE</h2>
+                             <p className="text-xs text-slate-400 font-mono">Le moteur évalue les habiletés réelles (OVR) des trios présence par présence.</p>
+                           </div>
+                           <div className="text-[11px] text-slate-500 space-y-1.5 bg-slate-950/50 p-3 rounded-lg border border-slate-850">
+                             <div className="flex justify-between"><span>Durée :</span><span className="text-slate-300">3 périodes de 20 min</span></div>
+                             <div className="flex justify-between"><span>Prolongation :</span><span className="text-slate-300">5 min à 3v3</span></div>
+                             <div className="flex justify-between"><span>Égalité :</span><span className="text-slate-300">Fusillade (3 tireurs max)</span></div>
+                           </div>
+                         </div>
+
+                         <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-xl flex gap-3 text-xs text-amber-300 mt-6">
+                           <Sliders className="w-5 h-5 flex-shrink-0 text-amber-400" />
+                           <span>Ajustez la vitesse de simulation en temps réel pour analyser les stratégies de vos trios.</span>
+                         </div>
+                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. STATISTICS AND BOX SCORE PANEL */}
+                {activeTab === 'stats' && (
+                  <div className="space-y-8 animate-in fade-in zoom-in duration-500">
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-6 shadow-xl text-slate-800">
+                      <h2 className="text-xl font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                        <Trophy className="w-6 h-6 text-sky-600" /> TABLEAU D'ANALYSE FINALE (CONFORME LNH)
+                      </h2>
+
+                      {/* Synchronized Team Stats Table */}
+                      <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-4 shadow-sm">
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                          <span className="font-bold text-xs uppercase tracking-widest text-slate-500 font-mono">Statistiques d'Équipe de Match (Synchronisées)</span>
+                          <button 
+                            onClick={() => handleCopyTable('team_stats_table')}
+                            className="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs flex items-center gap-1.5 transition-all shadow-sm font-semibold"
+                          >
+                            {copiedTableId === 'team_stats_table' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                            {copiedTableId === 'team_stats_table' ? 'Copié !' : 'Copier vers Excel'}
+                          </button>
+                        </div>
+                        <div className="overflow-x-auto custom-scrollbar">
+                          <table id="team_stats_table" className="w-full text-left text-xs whitespace-nowrap font-mono">
+                            <thead className="bg-slate-100 text-slate-600 uppercase text-[10px]">
+                              <tr>
+                                <th className="p-3 font-sans font-bold rounded-tl-lg">Équipe</th>
+                                <th className="p-3 text-center font-bold">PJ</th>
+                                <th className="p-3 text-center font-bold">V</th>
+                                <th className="p-3 text-center font-bold">D</th>
+                                <th className="p-3 text-center font-bold">DP</th>
+                                <th className="p-3 text-center font-bold">BP</th>
+                                <th className="p-3 text-center font-bold">BC</th>
+                                <th className="p-3 text-center font-bold">DFF</th>
+                                <th className="p-3 text-center font-bold">Tirs</th>
+                                <th className="p-3 text-center font-bold">Mise en échec</th>
+                                <th className="p-3 text-center font-bold">Mise en jeu</th>
+                                <th className="p-3 text-center font-bold">Tir bloqués</th>
+                                <th className="p-3 text-center font-bold">Avantage num.</th>
+                                <th className="p-3 text-center font-bold rounded-tr-lg">Désavantage num.</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 text-slate-800">
+                              <tr className="hover:bg-slate-50 transition-colors">
+                                <td className="p-3 font-bold font-sans text-slate-900">{teamNames.home || 'DOMICILE'}</td>
+                                <td className="p-3 text-center">1</td>
+                                <td className="p-3 text-center font-bold text-emerald-600">{uiState.homeScore > uiState.awayScore ? 1 : 0}</td>
+                                <td className="p-3 text-center font-bold text-red-600">{(!(uiState.homeScore > uiState.awayScore) && (uiState.period <= 3)) ? 1 : 0}</td>
+                                <td className="p-3 text-center font-bold text-amber-600">{(!(uiState.homeScore > uiState.awayScore) && (uiState.period >= 4)) ? 1 : 0}</td>
+                                <td className="p-3 text-center font-bold text-sky-600">{uiState.homeScore}</td>
+                                <td className="p-3 text-center text-slate-700">{uiState.awayScore}</td>
+                                <td className="p-3 text-center font-bold">{uiState.homeScore - uiState.awayScore > 0 ? `+${uiState.homeScore - uiState.awayScore}` : uiState.homeScore - uiState.awayScore}</td>
+                                <td className="p-3 text-center">{uiState.homeShots}</td>
+                                <td className="p-3 text-center">{uiState.homeHits}</td>
+                                <td className="p-3 text-center font-bold">{uiState.homeFOW}/{uiState.faceoffsTotalGoal}</td>
+                                <td className="p-3 text-center">{uiState.homeBlocks}</td>
+                                <td className="p-3 text-center font-bold text-sky-600">{uiState.homePPG}/{uiState.homePPO}</td>
+                                <td className="p-3 text-center font-bold text-emerald-600">{uiState.awayPPO - uiState.awayPPG}/{uiState.awayPPO}</td>
+                              </tr>
+                              <tr className="hover:bg-slate-50 transition-colors">
+                                <td className="p-3 font-bold font-sans text-slate-900">{teamNames.away || 'VISITEUR'}</td>
+                                <td className="p-3 text-center">1</td>
+                                <td className="p-3 text-center font-bold text-emerald-600">{uiState.awayScore > uiState.homeScore ? 1 : 0}</td>
+                                <td className="p-3 text-center font-bold text-red-600">{(!(uiState.awayScore > uiState.homeScore) && (uiState.period <= 3)) ? 1 : 0}</td>
+                                <td className="p-3 text-center font-bold text-amber-600">{(!(uiState.awayScore > uiState.homeScore) && (uiState.period >= 4)) ? 1 : 0}</td>
+                                <td className="p-3 text-center font-bold text-sky-600">{uiState.awayScore}</td>
+                                <td className="p-3 text-center text-slate-700">{uiState.homeScore}</td>
+                                <td className="p-3 text-center font-bold">{uiState.awayScore - uiState.homeScore > 0 ? `+${uiState.awayScore - uiState.homeScore}` : uiState.awayScore - uiState.homeScore}</td>
+                                <td className="p-3 text-center">{uiState.awayShots}</td>
+                                <td className="p-3 text-center">{uiState.awayHits}</td>
+                                <td className="p-3 text-center font-bold">{uiState.awayFOW}/{uiState.faceoffsTotalGoal}</td>
+                                <td className="p-3 text-center">{uiState.awayBlocks}</td>
+                                <td className="p-3 text-center font-bold text-sky-600">{uiState.awayPPG}/{uiState.awayPPO}</td>
+                                <td className="p-3 text-center font-bold text-emerald-600">{uiState.homePPO - uiState.homePPG}/{uiState.homePPO}</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {['home', 'away'].map(tid => {
+                        const tName = teamNames[tid] || (tid === 'home' ? 'DOMICILE' : 'VISITEUR');
+                        return (
+                          <div key={tid} className="bg-slate-100 p-5 rounded-xl border border-slate-200 mb-8 space-y-6">
+                            <h2 className="text-lg font-black text-slate-800 uppercase tracking-widest border-b border-slate-300 pb-2">STATISTIQUES : {tName}</h2>
+                            
+                            {/* Skaters Stats Table */}
+                            <div className="space-y-4">
+                              <div className="flex justify-between items-center">
+                                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-700">Patineurs</h3>
+                                <button onClick={() => handleCopyTable(`skaters-table-${tid}`)} className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-xs text-slate-700 rounded-lg font-medium transition-all border border-slate-300 shadow-sm">
+                                  {copiedTableId === `skaters-table-${tid}` ? <Check className="w-3.5 h-3.5 text-emerald-600"/> : <Copy className="w-3.5 h-3.5 text-slate-500"/>} Copier
+                                </button>
+                              </div>
+                              <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm bg-white">
+                                <table id={`skaters-table-${tid}`} className="w-full text-left text-[11px] text-slate-700 whitespace-nowrap">
+                                  <thead className="text-[10px] text-slate-500 uppercase bg-slate-50 border-b border-slate-200 font-bold tracking-wider">
+                                    <tr>
+                                      <th className="px-3 py-2">Nom</th>
+                                      <th className="px-3 py-2 text-center">POS</th>
+                                      <th className="px-3 py-2 text-center">MJ</th>
+                                      <th className="px-3 py-2 text-center">B</th>
+                                      <th className="px-3 py-2 text-center">A</th>
+                                      <th className="px-3 py-2 text-center text-sky-600">PTS</th>
+                                      <th className="px-3 py-2 text-center">diff ( + / - )</th>
+                                      <th className="px-3 py-2 text-center">Pun</th>
+                                      <th className="px-3 py-2 text-center font-black">OVR</th>
+                                      <th className="px-3 py-2 text-center">Style EA</th>
+                                      <th className="px-3 py-2 text-center">Physique</th>
+                                      <th className="px-3 py-2 text-center">Tir</th>
+                                      <th className="px-3 py-2 text-center">Création de jeu</th>
+                                      <th className="px-3 py-2 text-center">Défensive</th>
+                                      <th className="px-3 py-2 text-center">Patinage</th>
+                                      <th className="px-3 py-2 text-center">Offensive</th>
+                                      <th className="px-3 py-2 text-center">Maniement de rondelle</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-100">
+                                    {players.filter(p => p.tid === tid && p.pos !== 'G' && isPlayerAssigned(p.tid, p.id)).sort((a,b) => b.stats.pts - a.stats.pts || b.stats.b - a.stats.b).map(p => (
+                                      <tr key={p.id} className="hover:bg-slate-50 transition-colors">
+                                        <td className="px-3 py-2 font-bold text-slate-900">{p.name}</td>
+                                        <td className="px-3 py-2 text-center font-mono text-slate-500">{p.pos}</td>
+                                        <td className="px-3 py-2 text-center font-medium">{p.stats.mj}</td>
+                                        <td className="px-3 py-2 text-center font-medium">{p.stats.b}</td>
+                                        <td className="px-3 py-2 text-center font-medium">{p.stats.a}</td>
+                                        <td className="px-3 py-2 text-center font-black text-sky-600 bg-sky-50">{p.stats.pts}</td>
+                                        <td className="px-3 py-2 text-center font-mono">{p.stats.pm > 0 ? `+${p.stats.pm}` : p.stats.pm}</td>
+                                        <td className="px-3 py-2 text-center text-slate-500">{p.stats.pun}</td>
+                                        <td className="px-3 py-2 text-center font-black text-slate-800 bg-slate-100">{p.ovr}</td>
+                                        <td className="px-3 py-2 text-center text-slate-500">{p.attrs.style}</td>
+                                        <td className="px-3 py-2 text-center text-slate-500">{p.attrs.phy}</td>
+                                        <td className="px-3 py-2 text-center text-slate-500">{p.attrs.tir}</td>
+                                        <td className="px-3 py-2 text-center text-slate-500">{p.attrs.cre}</td>
+                                        <td className="px-3 py-2 text-center text-slate-500">{p.attrs.def}</td>
+                                        <td className="px-3 py-2 text-center text-slate-500">{p.attrs.pat}</td>
+                                        <td className="px-3 py-2 text-center text-slate-500">{p.attrs.off}</td>
+                                        <td className="px-3 py-2 text-center text-slate-500">{p.attrs.man}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+
+                            {/* Goalies Stats Table */}
+                            <div className="space-y-4">
+                              <div className="flex justify-between items-center">
+                                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-700">Gardiens</h3>
+                                <button onClick={() => handleCopyTable(`goalies-table-${tid}`)} className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-xs text-slate-700 rounded-lg font-medium transition-all border border-slate-300 shadow-sm">
+                                  {copiedTableId === `goalies-table-${tid}` ? <Check className="w-3.5 h-3.5 text-emerald-600"/> : <Copy className="w-3.5 h-3.5 text-slate-500"/>} Copier
+                                </button>
+                              </div>
+                              <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm bg-white">
+                                <table id={`goalies-table-${tid}`} className="w-full text-left text-[11px] text-slate-700 whitespace-nowrap">
+                                  <thead className="text-[10px] text-slate-500 uppercase bg-slate-50 border-b border-slate-200 font-bold tracking-wider">
+                                    <tr>
+                                      <th className="px-3 py-2">Nom</th>
+                                      <th className="px-3 py-2 text-center">Âge</th>
+                                      <th className="px-3 py-2 text-center">Pays</th>
+                                      <th className="px-3 py-2 text-center">MJ</th>
+                                      <th className="px-3 py-2 text-center">MA</th>
+                                      <th className="px-3 py-2 text-center text-emerald-600">V</th>
+                                      <th className="px-3 py-2 text-center text-red-600">D</th>
+                                      <th className="px-3 py-2 text-center text-slate-400">N</th>
+                                      <th className="px-3 py-2 text-center text-amber-600">DP</th>
+                                      <th className="px-3 py-2 text-center font-bold text-sky-700">Moy</th>
+                                      <th className="px-3 py-2 text-center text-sky-600 font-bold">% arrêts</th>
+                                      <th className="px-3 py-2 text-center">TC</th>
+                                      <th className="px-3 py-2 text-center">Arrêts</th>
+                                      <th className="px-3 py-2 text-center">BC</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-100">
+                                    {players.filter(p => p.tid === tid && p.pos === 'G' && p.stats.mj > 0).map(p => (
+                                      <tr key={p.id} className="hover:bg-slate-50 transition-colors">
+                                        <td className="px-3 py-2 font-bold text-slate-900">{p.name}</td>
+                                        <td className="px-3 py-2 text-center text-slate-500">{p.age}</td>
+                                        <td className="px-3 py-2 text-center text-slate-500">{p.country}</td>
+                                        <td className="px-3 py-2 text-center font-medium">{p.stats.mj}</td>
+                                        <td className="px-3 py-2 text-center font-medium">{p.stats.ma}</td>
+                                        <td className="px-3 py-2 text-center font-bold text-emerald-600">{p.stats.v}</td>
+                                        <td className="px-3 py-2 text-center font-bold text-red-600">{p.stats.d}</td>
+                                        <td className="px-3 py-2 text-center font-medium text-slate-400">0</td>
+                                        <td className="px-3 py-2 text-center font-bold text-amber-600">{p.stats.dp}</td>
+                                        <td className="px-3 py-2 text-center font-mono font-bold text-sky-800 bg-sky-50">{p.stats.moy}</td>
+                                        <td className="px-3 py-2 text-center font-black text-sky-600 bg-sky-50">{p.stats.pctArrets}</td>
+                                        <td className="px-3 py-2 text-center text-slate-600">{p.stats.tc}</td>
+                                        <td className="px-3 py-2 text-center text-slate-600">{p.stats.arrets}</td>
+                                        <td className="px-3 py-2 text-center text-slate-600 font-bold">{p.stats.bc}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
