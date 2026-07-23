@@ -236,7 +236,7 @@
                   id: `${tid}-g-${idx}-${Math.random().toString(36).substr(2, 4)}`,
                   tid, name, pos, ovr, age: 21 + Math.floor(idx * 2) % 15, country: COUNTRIES[idx % COUNTRIES.length],
                   attrs: { style, pot, ref, mit, posit, con, jeu },
-                  stats: { mj: 0, ma: 0, v: 0, d: 0, nd: 0, pm: 0, moy: 0, pctArrets: 0, tc: 0, arrets: 0, bc: 0, dp: 0 }
+                  stats: { mj: 0, ma: 0, v: 0, d: 0, nd: 0, pm: 0, moy: '0.00', pctArrets: '.000', tc: 0, arrets: 0, bc: 0, dp: 0 }
                 };
               }).filter(Boolean);
 
@@ -389,7 +389,7 @@
               if (p.pos === 'G') {
                 return {
                   ...p,
-                  stats: { mj: 0, ma: 0, v: 0, d: 0, nd: 0, pm: 0, moy: 0, pctArrets: 0, tc: 0, arrets: 0, bc: 0, dp: 0 }
+                  stats: { mj: 0, ma: 0, v: 0, d: 0, nd: 0, pm: 0, moy: '0.00', pctArrets: '.000', tc: 0, arrets: 0, bc: 0, dp: 0 }
                 };
               } else {
                 return {
@@ -1343,7 +1343,7 @@
                                     </tr>
                                   </thead>
                                   <tbody className="divide-y divide-slate-100">
-                                    {players.filter(p => p.tid === tid && p.pos !== 'G' && isPlayerAssigned(p.tid, p.id)).sort((a,b) => b.stats.pts - a.stats.pts || b.stats.b - a.stats.b).map(p => (
+                                    {players.filter(p => p.tid === tid && p.pos === 'G' && isPlayerAssigned(p.tid, p.id)).map(p => (
                                       <tr key={p.id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-3 py-2 font-bold text-slate-900">{p.name}</td>
                                         <td className="px-3 py-2 text-center font-mono text-slate-500">{p.pos}</td>
