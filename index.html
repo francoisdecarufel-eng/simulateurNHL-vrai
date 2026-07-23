@@ -179,7 +179,7 @@
 
           // Shootout states
           const [shootoutState, setShootoutState] = useState({
-            round: 1, currentShooterTeam: 'away', homeGoals: 0, awayGoals: 0, homeAttempts: 0, awayAttempts: 0, active: false
+            round: 1, currentShooterTeam: 'away', homeGoals: 0, awayGoals: 0, homeAttempts: 0, awayAttempts: 0, active: false, homeLastScorerId: null, awayLastScorerId: null
           });
 
           const [copiedTableId, setCopiedTableId] = useState(null);
@@ -399,7 +399,7 @@
               }
             }));
 
-            setShootoutState({ round: 1, currentShooterTeam: 'away', homeGoals: 0, awayGoals: 0, homeAttempts: 0, awayAttempts: 0, active: false });
+            setShootoutState({ round: 1, currentShooterTeam: 'away', homeGoals: 0, awayGoals: 0, homeAttempts: 0, awayAttempts: 0, active: false, homeLastScorerId: null, awayLastScorerId: null });
             setTimeRemaining(1200);
             setEventsLog(["--- CLAIRON DE DÉPART - DÉBUT DU MATCH ---"]);
             setGameStarted(true);
@@ -495,10 +495,12 @@
                   let assist2 = null;
                   const assistRoll = Math.random();
 
-                  if (helpers.length > 0 && assistRoll < 0.75) { 
+                  // Rigueur professionnelle : 90% de chances d'avoir au moins 1 passeur.
+                  if (helpers.length > 0 && assistRoll < 0.90) { 
                     assist1 = helpers[Math.floor(Math.random() * helpers.length)];
                     const remainingHelpers = helpers.filter(p => p.id !== assist1.id);
-                    if (remainingHelpers.length > 0 && assistRoll < 0.45) { 
+                    // 65% de chances d'avoir un 2e passeur pour accompagner le premier
+                    if (remainingHelpers.length > 0 && Math.random() < 0.65) { 
                       assist2 = remainingHelpers[Math.floor(Math.random() * remainingHelpers.length)];
                     }
                   }
@@ -569,8 +571,8 @@
             const shootingTeamId = shootoutState.currentShooterTeam;
             const defendingTeamId = isHomeShooter ? 'away' : 'home';
 
-            const pool = players.filter(p => p.tid === shootingTeamId && p.pos !== 'G');
-            const shooter = pool[Math.floor(Math.random() * pool.length)] || { name: 'Tireur' };
+            const pool = players.filter(p => p.tid === shootingTeamId && p.pos !== 'G' && isPlayerAssigned(shootingTeamId, p.id));
+            const shooter = pool[Math.floor(Math.random() * pool.length)] || { name: 'Tireur', id: null };
             const goalieId = alignments[defendingTeamId].goalies.starter;
             const goalie = players.find(p => p.id === goalieId) || { name: 'Gardien' };
 
@@ -578,17 +580,23 @@
 
             if (isGoal) {
               addEvent(`[FUSILLADE R${shootoutState.round}] BUT! ${shooter.name} marque contre ${goalie.name}.`);
-              setShootoutState(prev => ({
-                ...prev,
-                homeGoals: isHomeShooter ? prev.homeGoals + 1 : prev.homeGoals,
-                awayGoals: !isHomeShooter ? prev.awayGoals + 1 : prev.awayGoals
-              }));
             } else {
               addEvent(`[FUSILLADE R${shootoutState.round}] ARRÊT! ${goalie.name} bloque le lancer de ${shooter.name}.`);
             }
 
             setShootoutState(prev => {
               const nextState = { ...prev };
+              
+              if (isGoal) {
+                if (isHomeShooter) {
+                  nextState.homeGoals++;
+                  nextState.homeLastScorerId = shooter.id;
+                } else {
+                  nextState.awayGoals++;
+                  nextState.awayLastScorerId = shooter.id;
+                }
+              }
+
               if (isHomeShooter) nextState.homeAttempts++;
               else nextState.awayAttempts++;
 
@@ -605,6 +613,18 @@
                     awayScore: u.awayScore + (!homeWon ? 1 : 0),
                     isShootout: false
                   }));
+                  
+                  // Attribution stricte et obligatoire du but gagnant au compteur en fusillade.
+                  const winningScorerId = homeWon ? nextState.homeLastScorerId : nextState.awayLastScorerId;
+                  if (winningScorerId) {
+                    setPlayers(currentPlayers => currentPlayers.map(p => {
+                      if (p.id === winningScorerId) {
+                        return { ...p, stats: { ...p.stats, b: p.stats.b + 1, pts: p.stats.pts + 1 } };
+                      }
+                      return p;
+                    }));
+                  }
+
                   setTimeout(() => finalizeGameStats(homeWon), 150);
                   nextState.active = false;
                 } else {
@@ -768,7 +788,7 @@
               homePIM: 0, awayPIM: 0, homePPO: 0, awayPPO: 0, homePPG: 0, awayPPG: 0,
               currentLineHome: { f: 0, d: 0 }, currentLineAway: { f: 0, d: 0 }
             });
-            setShootoutState({ round: 1, currentShooterTeam: 'away', homeGoals: 0, awayGoals: 0, homeAttempts: 0, awayAttempts: 0, active: false });
+            setShootoutState({ round: 1, currentShooterTeam: 'away', homeGoals: 0, awayGoals: 0, homeAttempts: 0, awayAttempts: 0, active: false, homeLastScorerId: null, awayLastScorerId: null });
             setGameStarted(false);
             setActiveTab('prep');
           };
