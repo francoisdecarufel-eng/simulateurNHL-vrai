@@ -483,9 +483,23 @@
                 const shooterSkill = shooter.attrs.tir || 80;
                 const goalieSkill = (goalie.attrs.ref + goalie.attrs.posit + goalie.attrs.mit) / 3 || 80;
 
-                const baseGoalProb = 0.095;
-                const skillGap = (shooterSkill - goalieSkill) * 0.003;
-                const isGoal = Math.random() < (baseGoalProb + skillGap);
+                // --- NOUVELLE LOGIQUE DE DISTRIBUTION DES SCORES ---
+                // Le nombre de tirs ciblés total influence l'ouverture du jeu (Game Openness).
+                // Un match avec beaucoup de tirs sous-entend des défensives poreuses et des chances de haute qualité.
+                // Un match avec peu de tirs sous-entend un match hermétique (trap).
+                const totalTargetShots = uiState.targetHomeShots + uiState.targetAwayShots;
+                const opennessMultiplier = totalTargetShots / 54.5; // 54.5 est la moyenne de tirs combinés du simulateur
+                
+                // Probabilité de base rehaussée à ~11.8% (moyenne LNH moderne) ajustée par le rythme du match
+                const baseGoalProb = 0.118 * opennessMultiplier;
+                
+                // Impact du talent légèrement augmenté pour récompenser l'élite et étirer la distribution
+                const skillGap = (shooterSkill - goalieSkill) * 0.004;
+                
+                // On s'assure qu'un tir a toujours un minimum de chance (1.5%) même si le gardien est parfait
+                const finalProb = Math.max(0.015, baseGoalProb + skillGap);
+                const isGoal = Math.random() < finalProb;
+                // --- FIN NOUVELLE LOGIQUE ---
 
                 if (isGoal) {
                   setUiState(prev => ({ ...prev, [attackingTeam + 'Score']: prev[attackingTeam + 'Score'] + 1 }));
