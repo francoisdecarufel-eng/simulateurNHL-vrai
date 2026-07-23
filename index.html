@@ -1343,7 +1343,7 @@
                                     </tr>
                                   </thead>
                                   <tbody className="divide-y divide-slate-100">
-                                    {players.filter(p => p.tid === tid && p.pos === 'G' && isPlayerAssigned(p.tid, p.id)).map(p => (
+                                    {players.filter(p => p.tid === tid && p.pos !== 'G' && isPlayerAssigned(p.tid, p.id)).map(p => (
                                       <tr key={p.id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-3 py-2 font-bold text-slate-900">{p.name}</td>
                                         <td className="px-3 py-2 text-center font-mono text-slate-500">{p.pos}</td>
@@ -1398,7 +1398,7 @@
                                     </tr>
                                   </thead>
                                   <tbody className="divide-y divide-slate-100">
-                                    {players.filter(p => p.tid === tid && p.pos === 'G' && p.stats.mj > 0).map(p => (
+                                    {players.filter(p => p.tid === tid && p.pos === 'G' && isPlayerAssigned(p.tid, p.id)).map(p => (
                                       <tr key={p.id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-3 py-2 font-bold text-slate-900">{p.name}</td>
                                         <td className="px-3 py-2 text-center text-slate-500">{p.age}</td>
