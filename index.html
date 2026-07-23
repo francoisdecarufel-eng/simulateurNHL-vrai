@@ -496,8 +496,28 @@
                 // Impact du talent légèrement augmenté pour récompenser l'élite et étirer la distribution
                 const skillGap = (shooterSkill - goalieSkill) * 0.004;
                 
+                // --- AJOUT : SIMULATION DU "LOSER POINT" LNH (Objectif: ~23% de prolongations) ---
+                // Reproduit la réalité de la LNH : les équipes jouent hermétiquement en 3e période si c'est l'égalité (pour le point garanti),
+                // et l'équipe en retard d'un but pousse pour créer l'égalité.
+                let tieMakerMultiplier = 1.0;
+                if (uiState.period === 3) {
+                  const scoreDiff = uiState.homeScore - uiState.awayScore;
+                  if (scoreDiff === 0) {
+                    // Égalité : On réduit drastiquement les probabilités de marquer pour conserver l'égalité (Trappe défensive)
+                    tieMakerMultiplier = 0.55; 
+                  } else if (Math.abs(scoreDiff) === 1) {
+                    // Écart de 1 but : Poussée offensive de l'équipe en retard (Filet désert/Désespoir)
+                    const isTrailing = (attackingTeam === 'home' && scoreDiff < 0) || (attackingTeam === 'away' && scoreDiff > 0);
+                    if (isTrailing) {
+                      tieMakerMultiplier = 1.65; // Boost majeur pour forcer la prolongation
+                    } else {
+                      tieMakerMultiplier = 0.85; // L'équipe en avance se replie légèrement
+                    }
+                  }
+                }
+                
                 // On s'assure qu'un tir a toujours un minimum de chance (1.5%) même si le gardien est parfait
-                const finalProb = Math.max(0.015, baseGoalProb + skillGap);
+                const finalProb = Math.max(0.015, (baseGoalProb + skillGap) * tieMakerMultiplier);
                 const isGoal = Math.random() < finalProb;
                 // --- FIN NOUVELLE LOGIQUE ---
 
